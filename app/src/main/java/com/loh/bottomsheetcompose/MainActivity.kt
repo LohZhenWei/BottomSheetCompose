@@ -1,7 +1,9 @@
 package com.loh.bottomsheetcompose
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,17 +23,27 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val sheetType: MutableState<SheetType> = mutableStateOf(SheetType.Close)
+        //val sheetType: MutableState<SheetType> = mutableStateOf(SheetType.Close)
 
         setContent {
             val scope = rememberCoroutineScope()
 
-           /* val sheetType: MutableState<SheetType> = remember {
+
+            val sheetType: MutableState<SheetType> = remember {
                 mutableStateOf(SheetType.Close)
-            }*/
+            }
+            val sheetState =
+                rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+
+            when{
+                sheetState.isVisible -> BackHandler(true) {
+                    scope.hideBottomSheet(sheetState)
+                }
+                else -> BackHandler(false){}
+            }
 
             BottomSheetComposeTheme {
-                BottomSheetLayoutScreen(sheetType.value) { sheetState ->
+                BottomSheetLayoutScreen(sheetState, sheetType.value) { sheetState ->
                     Scaffold(topBar = { TopBar() }) {
                         Column(
                             modifier = Modifier
@@ -63,7 +75,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun CoroutineScope.openBottomSheet(sheetState: ModalBottomSheetState){
+    private fun CoroutineScope.openBottomSheet(sheetState: ModalBottomSheetState) {
         this.launch {
             if (sheetState.isVisible) {
                 sheetState.hide()
@@ -71,6 +83,13 @@ class MainActivity : ComponentActivity() {
                 sheetState.show()
         }
     }
+
+    private fun CoroutineScope.hideBottomSheet(sheetState: ModalBottomSheetState) {
+        this.launch {
+            sheetState.hide()
+        }
+    }
+
 }
 
 @Composable
@@ -84,10 +103,10 @@ fun TopBar() {
 @ExperimentalMaterialApi
 @Composable
 fun BottomSheetLayoutScreen(
+    sheetState: ModalBottomSheetState,
     sheetType: SheetType,
     content: @Composable (sheetState: ModalBottomSheetState) -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     ModalBottomSheetLayout(
         sheetContent = {
             BottomSheetContent(sheetType)
